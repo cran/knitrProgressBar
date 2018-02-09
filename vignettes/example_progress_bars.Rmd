@@ -1,0 +1,134 @@
+---
+title: "Example Progress Bar Output"
+author: "Robert M Flight"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Example Progress Bar Output}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r init, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Motivation
+
+`rmarkdown` & `knitr` capture everything written to `stdout`, which includes all output from
+document chunks, including **progress bars**, such as those supplied by `dplyr`.
+
+To enable progress reporting even when using `rmarkdown` documents, the progress
+bar supplied here can write output to any connection, including `stdout`, `stderr`,
+and any opened file.
+
+## Setup
+
+Load the package, and define the function that will use the progress bar. This
+particular example is courtesy of [Bob Rudis](https://rud.is/b/2017/03/27/all-in-on-r%E2%81%B4-progress-bars-on-first-post/).
+
+```{r setup}
+library(knitrProgressBar)
+
+arduously_long_nchar <- function(input_var, .pb=NULL) {
+  
+  update_progress(.pb) # this is a function provided by the package
+  
+  Sys.sleep(0.1)
+  
+  nchar(input_var)
+  
+}
+```
+
+## Choosing Output Locations
+
+There are two ways to choose the output:
+
+1. Using `make_kpb_output_decisions()`
+1. Directly, by passing a connection (or `NULL` for no output)
+
+### Using `make_kpb_output_decisions()`
+
+#### Defaults
+
+```{r make_kpb_1, eval = FALSE}
+# not run
+pb <- progress_estimated(length(letters))
+
+purrr::map_int(letters, arduously_long_nchar, .pb = pb)
+```
+
+In the terminal, this should push results to `stdout`, in `knitr` / `rmarkdown` it
+will get pushed to `stderr`.
+
+#### Suppressing Output
+
+If you want the progress to appear when in the terminal, but not when running
+via the **RStudio** `Knit` button or `Rscript`, then you can supply an option
+to suppress progress output in non-interactive running:
+
+```{r make_kpb_suppression, eval = FALSE}
+options(kpb.suppress_noninteractive = TRUE)
+```
+
+#### Log Files
+
+If you want log-files displaying progress, you can use the following options:
+
+```{r make_kpb_logfiles, eval = FALSE}
+options(kpb.use_logfile = TRUE)
+```
+
+This will push all progress to a log-file, by default to **kpb_output.log**.
+
+Adding more options will provide finer control:
+
+```{r make_kpb_specific_file, eval = FALSE}
+options(kpb.use_logfile = TRUE)
+options(kpb.log_file = "my_logfile.log")
+```
+
+Now progress will be saved in **my_logfile.log**.
+
+If you are using `rmarkdown` and want to make log-files based on the chunk labels,
+then you would use the `kpb.log_pattern` option:
+
+```{r make_kkpb_pattern, eval = FALSE}
+options(kpb.use_logfile = TRUE)
+options(kpb.log_pattern = "pb_out_")
+```
+
+This will generate a log-file for each `rmarkdown` chunk, and **prepend** each
+one with **pb_out_**.
+
+**Note**: `kpb.log_file` and `kpb.log_pattern` should not both be set in a single
+run, and `kpb.log_file` trumps `kpb.log_pattern`.
+
+### Setting Save Locations Directly
+
+In this case, you can simply pass a connection directly into `progress_estimated`:
+
+```{r direct_con, eval = FALSE}
+# to terminal, or print in a knitr chunk
+pb <- progress_estimated(length(letters), progress_location = stdout())
+
+# to stderr, so visible from knitr
+pb <- progress_estimated(length(letters), progress_location = stderr())
+
+# to a file, visible using tailf
+pb <- progress_estimated(length(letters), progress_location = file("progress.log", open = "w"))
+```
+
+## No Progress Bar
+
+If you decide that you don't want any progress displayed, just pass a `NULL` connection.
+
+```{r test_pb_null}
+pb <- progress_estimated(length(letters), progress_location = NULL)
+
+purrr::map_int(letters, arduously_long_nchar, .pb = pb)
+```
