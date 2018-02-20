@@ -3,7 +3,7 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 
-<title>Motivation</title>
+<title>Multi-Processing</title>
 
 <script type="text/javascript">
 window.onload = function() {
@@ -201,21 +201,21 @@ hr {
 </head>
 
 <body>
-<h2>Motivation</h2>
+<h2>Multi-Processing</h2>
 
-<p><code>rmarkdown</code> &amp; <code>knitr</code> capture everything written to <code>stdout</code>, which includes all output from
-document chunks, including <strong>progress bars</strong>, such as those supplied by <code>dplyr</code>.</p>
+<p>It is often useful to be able to also monitor the progress of jobs that
+are carried out using multi-processing. There are two functions used
+for that in this package: <code>set_progress_mp</code> and <code>watch_progress_mp</code> that are used in conjunction with each other.</p>
 
-<p>To enable progress reporting even when using <code>rmarkdown</code> documents, the progress
-bar supplied here can write output to any connection, including <code>stdout</code>, <code>stderr</code>,
-and any opened file.</p>
+<p>The code below uses the <code>parallel</code> package, but in theory, it should work with any of the parallel architectures available for R.</p>
 
-<h2>Setup</h2>
+<h2>Setting Up</h2>
 
-<p>Load the package, and define the function that will use the progress bar. This
-particular example is courtesy of <a href="https://rud.is/b/2017/03/27/all-in-on-r%E2%81%B4-progress-bars-on-first-post/">Bob Rudis</a>.</p>
+<p>To set up progress monitoring, you will again need to add a progress
+argument to your function. Notice that you can still use the <code>update_progress</code> function to <strong>update</strong> your progress correctly.</p>
 
 <pre><code class="r">library(knitrProgressBar)
+library(parallel)
 
 arduously_long_nchar &lt;- function(input_var, .pb=NULL) {
 
@@ -228,90 +228,31 @@ arduously_long_nchar &lt;- function(input_var, .pb=NULL) {
 }
 </code></pre>
 
-<h2>Choosing Output Locations</h2>
+<p>Then you set-up the actual progress indicator function using <code>set_progress_mp</code>:</p>
 
-<p>There are two ways to choose the output:</p>
-
-<ol>
-<li>Using <code>make_kpb_output_decisions()</code></li>
-<li>Directly, by passing a connection (or <code>NULL</code> for no output)</li>
-</ol>
-
-<h3>Using <code>make_kpb_output_decisions()</code></h3>
-
-<h4>Defaults</h4>
-
-<pre><code class="r"># not run
-pb &lt;- progress_estimated(length(letters))
-
-purrr::map_int(letters, arduously_long_nchar, .pb = pb)
+<pre><code class="r">set_kpb &lt;- set_progress_mp(&quot;progress_file.log&quot;)
 </code></pre>
 
-<p>In the terminal, this should push results to <code>stdout</code>, in <code>knitr</code> / <code>rmarkdown</code> it
-will get pushed to <code>stderr</code>.</p>
+<p>This object will write a &ldquo;.&rdquo; to the file <strong>progress_file.log</strong> each
+time it is called. Therefore, the file location should be accessible
+to all of the threads.</p>
 
-<h4>Suppressing Output</h4>
+<h2>Running</h2>
 
-<p>If you want the progress to appear when in the terminal, but not when running
-via the <strong>RStudio</strong> <code>Knit</code> button or <code>Rscript</code>, then you can supply an option
-to suppress progress output in non-interactive running:</p>
+<p>To use this, start your multi-processing code.</p>
 
-<pre><code class="r">options(kpb.suppress_noninteractive = TRUE)
+<pre><code class="r">options(mc.cores = 2)
+mclapply(seq(1, 100), arduously_long_nchar, .pb = set_kpb)
 </code></pre>
 
-<h4>Log Files</h4>
+<p>And <strong>then in a separate R process</strong>, setup the <strong>watcher</strong>:</p>
 
-<p>If you want log-files displaying progress, you can use the following options:</p>
-
-<pre><code class="r">options(kpb.use_logfile = TRUE)
+<pre><code class="r">kpb_watch &lt;- watch_progress_mp(100, watch_location = &quot;progress_file.log&quot;)
+kpb_watch
 </code></pre>
 
-<p>This will push all progress to a log-file, by default to <strong>kpb_output.log</strong>.</p>
-
-<p>Adding more options will provide finer control:</p>
-
-<pre><code class="r">options(kpb.use_logfile = TRUE)
-options(kpb.log_file = &quot;my_logfile.log&quot;)
-</code></pre>
-
-<p>Now progress will be saved in <strong>my_logfile.log</strong>.</p>
-
-<p>If you are using <code>rmarkdown</code> and want to make log-files based on the chunk labels,
-then you would use the <code>kpb.log_pattern</code> option:</p>
-
-<pre><code class="r">options(kpb.use_logfile = TRUE)
-options(kpb.log_pattern = &quot;pb_out_&quot;)
-</code></pre>
-
-<p>This will generate a log-file for each <code>rmarkdown</code> chunk, and <strong>prepend</strong> each
-one with <strong>pb<em>out</em></strong>.</p>
-
-<p><strong>Note</strong>: <code>kpb.log_file</code> and <code>kpb.log_pattern</code> should not both be set in a single
-run, and <code>kpb.log_file</code> trumps <code>kpb.log_pattern</code>.</p>
-
-<h3>Setting Save Locations Directly</h3>
-
-<p>In this case, you can simply pass a connection directly into <code>progress_estimated</code>:</p>
-
-<pre><code class="r"># to terminal, or print in a knitr chunk
-pb &lt;- progress_estimated(length(letters), progress_location = stdout())
-
-# to stderr, so visible from knitr
-pb &lt;- progress_estimated(length(letters), progress_location = stderr())
-
-# to a file, visible using tailf
-pb &lt;- progress_estimated(length(letters), progress_location = file(&quot;progress.log&quot;, open = &quot;w&quot;))
-</code></pre>
-
-<h2>No Progress Bar</h2>
-
-<p>If you decide that you don&#39;t want any progress displayed, just pass a <code>NULL</code> connection.</p>
-
-<pre><code class="r">pb &lt;- progress_estimated(length(letters), progress_location = NULL)
-
-purrr::map_int(letters, arduously_long_nchar, .pb = pb)
-#&gt;  [1] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-</code></pre>
+<p>In this separate process, you should see the progress indicator keeping
+up with the multi-processing code.</p>
 
 </body>
 
