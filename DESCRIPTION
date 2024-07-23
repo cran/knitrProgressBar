@@ -1,7 +1,7 @@
 Package: knitrProgressBar
 Type: Package
 Title: Provides Progress Bars in 'knitr'
-Version: 1.1.0
+Version: 1.1.1
 Authors@R: c(person(given = c("Robert", "M"), family = "Flight", email = "rflight79@gmail.com", role = c("aut", "cre")),
             person("Hadley", "Wickham", role = "ctb", comment = "Author of included dplyr fragments"),
             person("Romain", "Francois", role = "ctb", comment = "Author of included dplyr fragments"),
@@ -12,17 +12,16 @@ Description: Provides a progress bar similar to 'dplyr' that can write progress 
     variety of locations, including stdout(), stderr(), or from file(). Useful when using 'knitr' or 'rmarkdown',
     and you still want to see progress of calculations in the terminal.
 BugReports: https://github.com/rmflight/knitrProgressBar/issues
-URL: https://rmflight.github.io/knitrProgressBar
+URL: https://rmflight.github.io/knitrProgressBar/
 License: MIT + file LICENSE
 Encoding: UTF-8
-LazyData: true
 Imports: R6, R.oo
 Suggests: knitr, rmarkdown, purrr, testthat, covr, mockr, withr,
         parallel
 VignetteBuilder: knitr
-RoxygenNote: 6.0.1
+RoxygenNote: 7.3.2
 NeedsCompilation: no
-Packaged: 2018-02-20 03:32:45 UTC; rmflight
+Packaged: 2024-07-23 17:17:57 UTC; rmflight
 Author: Robert M Flight [aut, cre],
   Hadley Wickham [ctb] (Author of included dplyr fragments),
   Romain Francois [ctb] (Author of included dplyr fragments),
@@ -31,4 +30,4 @@ Author: Robert M Flight [aut, cre],
   RStudio [cph] (Copyright holder of included dplyr fragments)
 Maintainer: Robert M Flight <rflight79@gmail.com>
 Repository: CRAN
-Date/Publication: 2018-02-20 04:04:54 UTC
+Date/Publication: 2024-07-23 18:00:01 UTC
